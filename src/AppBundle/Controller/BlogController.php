@@ -40,7 +40,12 @@ class BlogController extends Controller
      */
     public function indexAction($page)
     {
-        $posts = $this->getDoctrine()->getRepository('AppBundle:Post')->findLatest($page);
+        $redis = $this->container->get('snc_redis.cache');
+        if (!$posts = unserialize($redis->get("index:page:$page"))){
+            $posts = $this->getDoctrine()->getRepository('AppBundle:Post')->findLatest($page);
+            $redis->set("index:page:$page", serialize($posts));
+            $redis->expire("index:page:$page", 30);
+        }
 
         return $this->render('blog/index.html.twig', array('posts' => $posts));
     }
